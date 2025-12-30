@@ -56,6 +56,7 @@
 
 import streamlit as st
 import requests
+import pandas as pd
 from snowflake.snowpark.functions import col
 
 st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
@@ -67,43 +68,53 @@ st.write("The name on your smoothie will be:", name_on_order)
 cnx = st.connection("snowflake")
 session = cnx.session()
 
-# Pull both columns
-fruit_df = (
+# Bring in both columns (FRUIT_NAME + SEARCH_ON)
+my_dataframe = (
     session.table("SMOOTHIES.PUBLIC.FRUIT_OPTIONS")
     .select(col("FRUIT_NAME"), col("SEARCH_ON"))
-    .to_pandas()
 )
 
-# Build mapping: label -> api_name
-fruit_map = dict(zip(fruit_df["FRUIT_NAME"], fruit_df["SEARCH_ON"]))
+# ✅ Make a Pandas version called pd_df (lab requirement)
+pd_df = my_dataframe.to_pandas()
 
-# Multiselect shows FRUIT_NAME labels
+# Multiselect should show fruit names (FRUIT_NAME)
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
-    fruit_df["FRUIT_NAME"].tolist(),
+    pd_df["FRUIT_NAME"].tolist(),
     max_selections=5
 )
 
 if ingredients_list:
     ingredients_string = ""
 
-    for fruit_label in ingredients_list:
-        ingredients_string += fruit_label + " "
+    for fruit_chosen in ingredients_list:
+        ingredients_string += fruit_chosen + " "
 
-        api_name = fruit_map[fruit_label]  # <- THIS is the whole point
+        # ✅ Lab-required lookup pattern using loc + iloc
+        search_on = pd_df.loc[
+            pd_df["FRUIT_NAME"] == fruit_chosen,
+            "SEARCH_ON"
+        ].iloc[0]
+
+        # ✅ Lab-required sentence
+        st.write("The search value for ", fruit_chosen, " is ", search_on, ".")
+
+        st.subheader(f"{fruit_chosen} Nutrition Information")
+
+        # ✅ Use SEARCH_ON value for the API call
         smoothiefroot_response = requests.get(
-            "https://my.smoothiefroot.com/api/fruit/" + api_name
+            "https://my.smoothiefroot.com/api/fruit/" + search_on
         )
 
-        st.subheader(f"{fruit_label} Nutrition Information")
         st.dataframe(smoothiefroot_response.json(), use_container_width=True)
 
     my_insert_stmt = f"""
-        INSERT INTO SMOOTHIES.PUBLIC.ORDERS(INGREDIENTS, NAME_ON_ORDER)
+        INSERT INTO SMOOTHIES.PUBLIC.ORDERS (INGREDIENTS, NAME_ON_ORDER)
         VALUES ('{ingredients_string}', '{name_on_order}')
     """
 
     if st.button("Submit Order"):
         session.sql(my_insert_stmt).collect()
         st.success("Your Smoothie is ordered! " + name_on_order, icon="✅")
+
 
