@@ -85,28 +85,32 @@ ingredients_list = st.multiselect(
 )
 
 if ingredients_list:
-    ingredients_string = ""
+
+    ingredients_string = ''
 
     for fruit_chosen in ingredients_list:
-        ingredients_string += fruit_chosen + " "
+        ingredients_string += fruit_chosen + ' '
 
-        # ✅ Lab-required lookup pattern using loc + iloc
+        # lookup SEARCH_ON value
         search_on = pd_df.loc[
-            pd_df["FRUIT_NAME"] == fruit_chosen,
-            "SEARCH_ON"
+            pd_df['FRUIT_NAME'] == fruit_chosen,
+            'SEARCH_ON'
         ].iloc[0]
 
-        # ✅ Lab-required sentence
-        st.write("The search value for ", fruit_chosen, " is ", search_on, ".")
+        # optional debug (recommended during lab)
+        st.write('The search value for ', fruit_chosen, ' is ', search_on, '.')
 
-        st.subheader(f"{fruit_chosen} Nutrition Information")
+        st.subheader(fruit_chosen + ' Nutrition Information')
 
-        # ✅ Use SEARCH_ON value for the API call
+        # ✅ USE search_on, not fruit_chosen
         smoothiefroot_response = requests.get(
-            f"https://my.smoothiefroot.com/api/fruit/{search_on}")
+            f"https://my.smoothiefroot.com/api/fruit/{search_on}"
         )
 
-        st.dataframe(smoothiefroot_response.json(), use_container_width=True)
+        st.dataframe(
+            smoothiefroot_response.json(),
+            use_container_width=True
+        )
 
     my_insert_stmt = f"""
         INSERT INTO SMOOTHIES.PUBLIC.ORDERS (INGREDIENTS, NAME_ON_ORDER)
