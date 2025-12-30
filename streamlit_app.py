@@ -103,7 +103,7 @@ if ingredients_list:
 
         # ✅ Use SEARCH_ON value for the API call
         smoothiefroot_response = requests.get(
-            "https://my.smoothiefroot.com/api/fruit/" + search_on
+            f"https://my.smoothiefroot.com/api/fruit/{search_on}")
         )
 
         st.dataframe(smoothiefroot_response.json(), use_container_width=True)
